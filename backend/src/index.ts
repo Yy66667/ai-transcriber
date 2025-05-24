@@ -4,7 +4,7 @@ import cors from "cors";
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 dotenv.config();
 
@@ -15,7 +15,20 @@ const upload = multer({ dest: "uploads/" });
 app.use(cors());
 app.use(express.json());
 
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "" );
+
+async function run() {
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent("Tell me a joke about AI.");
+    const response = await result.response;
+    const text = response.text();
+    console.log(text);
+  } catch (error) {
+    console.error("An error occurred:", error);
+  }
+}
+
 
 function fileToBase64(filePath: string): string {
   const fileBuffer = fs.readFileSync(filePath);
@@ -28,34 +41,59 @@ app.post("/transcribe", upload.single("audio"), async (req: Request, res: Respon
     return;
   }
 
-  const prompt = req.body.prompt || "Transcribe and summarize this audio";
+  const prompt = fs.readFile("src/prompt.txt", "utf-8", (err,data)=>{
+    if(err){
+      console.log(err)
+    }else {
+      return data
+    }
+  });
+
   const filePath = req.file.path;
   const mimeType = req.file.mimetype;
 
   try {
     const base64Audio = fileToBase64(filePath);
     
-    const result = await genAI.models.generateContent({
-        model: "gemini-2.5",
-      contents: [
+    
+
+// Initialize with your API key
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "" );
+
+// Load the model
+const model = genAI.getGenerativeModel({
+  model: "gemini-1.5-flash",
+  generationConfig: {
+    temperature: 0,
+  },
+});
+
+// Send the prompt with audio
+const result = await model.generateContent({
+  contents: [
+    {
+      role: "user",
+      parts: [
+        { text: "" },
         {
-          role: "user",
-          parts: [
-            { text: prompt },
-            {
-              inlineData: {
-                mimeType,
-                data: base64Audio,
-              },
-            },
-          ],
+          inlineData: {
+            mimeType,
+            data: base64Audio,
+          },
         },
       ],
-    });
+    },
+  ],
+});
 
-    
-    const text = result.text;
-    res.json({ result: text });
+const response = await result.response;
+console.log(response.text() );
+
+run();
+
+ ;
+    res.json({ result: response.text() });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to transcribe audio" });
@@ -69,4 +107,3 @@ app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });
 
-console.log(process.env.GEMINI_API_KEY)
