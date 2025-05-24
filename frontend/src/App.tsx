@@ -4,7 +4,6 @@ import { useState } from "react";
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
-  const [prompt, setPrompt] = useState("Transcribe and summarize this audio");
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -16,9 +15,8 @@ export default function Home() {
 
     const formData = new FormData();
     formData.append("audio", file);
-    formData.append("prompt", prompt);
 
-    const response = await fetch("http://localhost:23334/transcribe", {
+    const response = await fetch("http://localhost:3000/transcribe", {
       method: "POST",
       body: formData,
     });
@@ -39,12 +37,6 @@ export default function Home() {
           onChange={(e) => setFile(e.target.files?.[0] || null)}
         />
 
-        <textarea
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Enter your prompt"
-          className="border rounded p-2"
-        />
 
         <button
           type="submit"
@@ -56,9 +48,9 @@ export default function Home() {
       </form>
 
       {result && (
-        <div className="mt-6">
+        <div className="mt-6 w-[700px]">
           <h2 className="font-semibold mb-2">Response:</h2>
-          <pre className="bg-gray-100 p-4 rounded whitespace-pre-wrap">{result}</pre>
+          <pre className="bg-gray-100 p-4 rounded w-[400px] whitespace-pre-wrap">{result}</pre>
         </div>
       )}
     </main>
