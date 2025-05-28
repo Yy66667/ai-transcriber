@@ -1,40 +1,7 @@
 import React, { useState, useRef } from "react";
 import ReactMarkdown from "react-markdown";
-
-export function CopyButton({ targetRef }: { targetRef: React.RefObject<HTMLDivElement | null> }) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = () => {
-    if (!targetRef.current) return;
-
-    const range = document.createRange();
-    const selection = window.getSelection();
-
-    range.selectNodeContents(targetRef.current);
-    selection?.removeAllRanges();
-    selection?.addRange(range);
-
-    try {
-      document.execCommand("copy");
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
-    }
-
-    selection?.removeAllRanges();
-  };
-
-  return (
-    <button
-      onClick={handleCopy}
-      className="px-3 py-1 text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700 transition"
-    >
-      {copied ? "Copied!" : "Copy"}
-    </button>
-  );
-}
-
+import {CopyButton} from  "./components/copybutton";
+import uploadSvg from "./assets/upload.svg";
 
 export default function Transcribe() {
   const [audioFile, setAudioFile] = useState<File | null>(null);
@@ -94,9 +61,16 @@ export default function Transcribe() {
       <h1 className="text-2xl font-semibold mb-6 text-gray-900">Audio Transcription</h1>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <label className="block w-full border border-gray-300 rounded-md cursor-pointer text-center p-4 text-gray-500 hover:bg-gray-50">
-  <span id="file-label">
-    {audioFile ? audioFile.name : "Click to upload an audio file"}
+        <label className="flex flex-col justify-center items-center w-full border border-gray-300 rounded-md cursor-pointer p-4 text-gray-500 hover:bg-gray-50">
+  <span id="file-label " className="flex flex-ROW items-center gap-2 text-[18px]">
+      {audioFile ? audioFile.name :
+          <>
+
+          <img src={uploadSvg} className="w-6 h-6"  alt="" />
+            <span className="text-gray-600">Click to upload an audio file </span>
+            <span className="text-gray-600">or drag and drop it here</span> 
+            
+          </>}
   </span>
   <input
     type="file"
@@ -127,20 +101,20 @@ export default function Transcribe() {
       )}
 
       {downloadUrl && (
-        <>
+        <div className="mt-2 flex gap-2 justify-center items-center">
           <a
             href={`http://localhost:3000${downloadUrl}`}
             download
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-4 inline-block bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-semibold"
+            className=" bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-semibold"
           >
             Download Transcript (.docx)
           </a>
 
           {/* Copy button that copies formatted markdown */}
           <CopyButton targetRef={transcriptRef}/>
-        </>
+        </div>
       )}
     </div>
   );
