@@ -94,12 +94,18 @@ export default function Transcribe() {
       <h1 className="text-2xl font-semibold mb-6 text-gray-900">Audio Transcription</h1>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="file"
-          accept="audio/*"
-          onChange={handleFileChange}
-          className="block w-full text-gray-700 border border-gray-300 rounded-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
+        <label className="block w-full border border-gray-300 rounded-md cursor-pointer text-center p-4 text-gray-500 hover:bg-gray-50">
+  <span id="file-label">
+    {audioFile ? audioFile.name : "Click to upload an audio file"}
+  </span>
+  <input
+    type="file"
+    accept="audio/*"
+    onChange={handleFileChange}
+    className="hidden"
+  />
+</label>
+
 
         <button
           type="submit"
