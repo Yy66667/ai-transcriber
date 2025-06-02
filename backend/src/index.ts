@@ -5,8 +5,9 @@ import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
 import { v4 as uuidv4 } from "uuid";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai"
 import { Document, Packer, Paragraph, TextRun } from "docx";
+import { text } from "stream/consumers";
 
 dotenv.config();
 
@@ -24,7 +25,7 @@ const catchAsync = (fn: (req: Request, res: Response, next: NextFunction) => Pro
   };
 };
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const genAI = new GoogleGenAI({apiKey: process.env.GEMINI_API_KEY});
 
 function fileToBase64(filePath: string): string {
   const fileBuffer = fs.readFileSync(filePath);
@@ -45,34 +46,61 @@ app.post("/transcribe", upload.single("audio"), catchAsync(async (req, res:any) 
   const prompt = fs.readFileSync(promptPath, "utf-8");
   const filePath = req.file.path;
   const mimeType = req.file.mimetype;
+  const {SelectModel} = req.body;
 
-  try {
-    const base64Audio = fileToBase64(filePath);
+ try {
+    //fileToBase64(filePath);
 
-    const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
-      generationConfig: { temperature: 0 },
+   
+
+    const uploadfile = await genAI.files.upload({
+      file: filePath,
+      config: {
+        mimeType: mimeType}
     });
 
-    const result = await model.generateContent({
+    console.log("File uploaded successfully:", uploadfile);
+
+    /*const response = await genAI.models.generateContent({
+      model: SelectModel,
+      config:{temperature: 0,
+        
+      },
+      
       contents: [
+        
         {
+          // @ts-ignore
           role: "user",
           parts: [
             { text: prompt },
-            {
-              inlineData: {
-                mimeType,
-                data: base64Audio,
-              },
-            },
+            {filedata: uploadfile.uri}
+            
           ],
-        },
+        }],
+    });*/
+    
+    const response = await genAI.models.generateContent({
+  model: SelectModel,
+  config: {
+    temperature: 0,
+  },
+  contents: [
+    {
+      role: "user",
+      parts: [
+        { text: prompt },
+        { fileData: { fileUri: uploadfile.uri } }, // ✅ Correct field name and structure
       ],
-    });
+    },
+  ],
+});
 
-    const transcriptText = result.response.text();
 
+    
+    const transcriptText = response.text;
+    console.log("Transcription response:", transcriptText);
+//@ts-ignore
 const paragraphs = transcriptText.split("\n").filter(line => line.trim() !== "");
 
 const doc = new Document({
