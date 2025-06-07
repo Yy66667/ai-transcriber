@@ -1,9 +1,7 @@
-import React, { useState } from "react";
-import copySvg from "../assets/copy.svg";
+import DownloadButton from "./downloadButton";
 
 export function CopyButton({ targetRef }: { targetRef: React.RefObject<HTMLDivElement | null> }) {
-  const [copied, setCopied] = useState(false);
-
+  
   const handleCopy = () => {
     if (!targetRef.current) return;
 
@@ -16,8 +14,6 @@ export function CopyButton({ targetRef }: { targetRef: React.RefObject<HTMLDivEl
 
     try {
       document.execCommand("copy");
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error("Failed to copy:", err);
     }
@@ -28,11 +24,13 @@ export function CopyButton({ targetRef }: { targetRef: React.RefObject<HTMLDivEl
   return (
     <button
       onClick={handleCopy}
-      className="px-3 py-2 flex justify-center items-center gap-2 text-md rounded-md font-bold bg-blue-600 text-white hover:bg-blue-700 transition"
+      className="mt-2 flex font-bold text-white transition"
     >
-      {copied ? "Copied!" : ""}
-      <img src={copySvg} className="w-5 h-5"  alt="" />
+    
+    <DownloadButton  text="copy" />
     </button>
     
   );
 }
+
+

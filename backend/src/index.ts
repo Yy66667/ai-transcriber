@@ -27,10 +27,6 @@ const catchAsync = (fn: (req: Request, res: Response, next: NextFunction) => Pro
 
 const genAI = new GoogleGenAI({apiKey: process.env.GEMINI_API_KEY});
 
-function fileToBase64(filePath: string): string {
-  const fileBuffer = fs.readFileSync(filePath);
-  return fileBuffer.toString("base64");
-}
 
 app.post("/transcribe", upload.single("audio"), catchAsync(async (req, res:any) => {
   if (!req.file) {
@@ -43,10 +39,16 @@ app.post("/transcribe", upload.single("audio"), catchAsync(async (req, res:any) 
     return res.status(500).json({ error: "Prompt file not found" });
   }
 
-  const prompt = fs.readFileSync(promptPath, "utf-8");
+  const {prompt} =  req.body ;
   const filePath = req.file.path;
   const mimeType = req.file.mimetype;
   const {SelectModel} = req.body;
+
+  console.log(prompt)
+  if(!prompt){
+    res.json("write a prompt")
+    console.log("prompt is empty")
+    return}
 
  try {
     //fileToBase64(filePath);
@@ -61,26 +63,7 @@ app.post("/transcribe", upload.single("audio"), catchAsync(async (req, res:any) 
 
     console.log("File uploaded successfully:", uploadfile);
 
-    /*const response = await genAI.models.generateContent({
-      model: SelectModel,
-      config:{temperature: 0,
-        
-      },
-      
-      contents: [
-        
-        {
-          // @ts-ignore
-          role: "user",
-          parts: [
-            { text: prompt },
-            {filedata: uploadfile.uri}
-            
-          ],
-        }],
-    });*/
-    
-    const response = await genAI.models.generateContent({
+  const response = await genAI.models.generateContent({
   model: SelectModel,
   config: {
     temperature: 0,
@@ -99,7 +82,7 @@ app.post("/transcribe", upload.single("audio"), catchAsync(async (req, res:any) 
 
     
     const transcriptText = response.text;
-    console.log("Transcription response:", transcriptText);
+    
 //@ts-ignore
 const paragraphs = transcriptText.split("\n").filter(line => line.trim() !== "");
 

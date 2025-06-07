@@ -1,10 +1,20 @@
 import React, { useState, useRef } from "react";
+import type {RefObject } from "react";
 import ReactMarkdown from "react-markdown";
 import {CopyButton} from  "./components/copybutton";
 import ModelSelector from "./components/selectmodel";
 import uploadSvg from "./assets/upload.svg";
+import PromptUploader from "./components/promptBox";
+import Loader from "./components/loading";
+import Button from "./components/generateButton";
+import DownloadButton from "./components/downloadButton";
+import CLoader from "./components/componentLoading";
+//@ts-ignore
 
 export default function Transcribe() {
+
+const promptRef = useRef<string | null>(null);
+
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [transcript, setTranscript] = useState<string>("");
   const transcriptRef = useRef<HTMLDivElement>(null);
@@ -13,17 +23,23 @@ export default function Transcribe() {
   const [error, setError] = useState<string>("");
   const [selectedModel, setSelectedModel] = useState<string>("");
 
+
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAudioFile(e.target.files?.[0] || null);
     setTranscript("");
     setDownloadUrl("");
     setError("");
   };
+ 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!audioFile) {
       setError("Please select an audio file first.");
+      return;
+    }if (!promptRef.current) {
+      setError("prompt is missing");
       return;
     }
 
@@ -35,7 +51,10 @@ export default function Transcribe() {
     try {
       const formData = new FormData();
       formData.append("audio", audioFile);
-      formData.append("SelectModel", selectedModel); // Example model, can be dynamic
+      formData.append("SelectModel", selectedModel);
+      formData.append("prompt", promptRef.current ?? "");
+      // Example 
+      // model, can be dynamic
 
       const response = await fetch("http://localhost:3000/transcribe", {
         method: "POST",
@@ -68,6 +87,7 @@ export default function Transcribe() {
   "gemini-2.5-flash-preview-05-20",
   "gemini-2.5-flash-preview-04-17-thinking",
   "gemini-2.5-pro-preview-05-06",
+  "gemini-2.5-pro-preview-06-05",
   "gemini-2.0-pro-exp",
   "gemini-2.0-pro-exp-02-05",
   "gemini-exp-1206",
@@ -92,6 +112,7 @@ export default function Transcribe() {
   };
 
 const [dragActive, setDragActive] = useState(false);
+
 const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
   e.preventDefault();
   e.stopPropagation();
@@ -116,23 +137,26 @@ const handleDrag = (e: React.DragEvent<HTMLLabelElement>) => {
 
 
   return (
-    <div className="max-w-xl mx-auto p-6 bg-white rounded-md shadow-md mt-10">
-      <h1 className="text-2xl font-semibold mb-6 text-gray-900">Audio Transcription</h1>
+    <div className="flex h-screen bg-zinc-100 gap-3 justify-center">
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+
+    <div className=" p-6 h-150 bg-stone-50 rounded-md shadow-md mt-10">
+      <h1 className="text-2xl font-semibold mb-6 text-slate-800">Audio Transcription</h1>
+
+      <form onSubmit={handleSubmit} className="py-4 relative flex-col gap-2 justify-center flex items-center" >
         <label 
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
         htmlFor="file-upload"
-        className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl cursor-pointer transition-colors
+        className={`flex flex-col items-center justify-center py-2 px-4 border-2 border-dashed rounded-xl cursor-pointer transition-colors
           ${dragActive ? "border-blue-500 bg-blue-50" : "border-gray-300 bg-white hover:bg-gray-50"}`}
-      > <span id="file-label " className="flex flex-ROW items-center gap-2 text-[18px]">
+      > <span id="file-label " className="flex items-center justify-center gap-2 text-[18px] min-w-110">
       {audioFile ? audioFile.name :
           <>
         <img src={uploadSvg} className="w-6 h-6"  alt="" />
-        <p className="text-gray-600">Drag and drop an audio file here or click to upload</p>
+        <p className="text-gray-600   w-full">Drag/Click to upload</p>
        
           </>}
            <input
@@ -143,47 +167,60 @@ const handleDrag = (e: React.DragEvent<HTMLLabelElement>) => {
           className="hidden"
         />
   </span>
-
       </label>
-
-
+      <ModelSelector models={models} onSelect={handleModelSelect} />
+       <PromptUploader promptRef={promptRef} />
         <button
           type="submit"
           disabled={loading}
-          className={`w-full py-2 px-4 rounded-md text-white font-semibold ${
-            loading ? "bg-indigo-300 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700"
-          }`}
+          className={`absolute bottom-[32px] right-[20px] ${
+            loading ? "cursor-not-allowed" : ""}`}
         >
-          {loading ? "Transcribing..." : "Upload & Transcribe"}
+          {loading ? <Loader /> : <Button />}   
         </button>
-
-      <ModelSelector models={models} onSelect={handleModelSelect} />
       </form>
+    </div>
 
-      {error && <p className="mt-4 text-red-600 font-medium">{error}</p>}
+    <div className="w-xl mr-6 mt-10 relative">      
+         {error && <p className="text-red-600 font-medium">{error}</p>}
 
       {transcript && (
-        <div  ref={transcriptRef} className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-md max-h-100 overflow-y-auto whitespace-pre-wrap text-gray-800">
+        <div  ref={transcriptRef} className=" w-full p-4 bg-gray-50 border border-gray-200 rounded-md max-h-150 overflow-y-auto whitespace-pre-wrap text-gray-800">
           <ReactMarkdown>{transcript}</ReactMarkdown>
         </div>
       )}
 
+      {
+        !loading && !transcript && !error &&  <div  ref={transcriptRef} className=" w-full p-4 bg-gray-50 border border-gray-200 rounded-md max-h-150 overflow-y-auto whitespace-pre-wrap text-gray-800">
+         Preview will appear here
+        </div>
+      }
+      
+          {loading ?
+          <div  ref={transcriptRef} className="w-xl h-150 flex items-center justify-center mr-6 relative w-full p-4 bg-stone-50 border border-gray-200 rounded-md overflow-y-auto whitespace-pre-wrap text-gray-800">
+
+          <CLoader /> 
+        </div>: ""}
+
       {downloadUrl && (
-        <div className="mt-2 flex gap-2 justify-center items-center">
+        <div className="mt-2 absolute top-0 right-[-170px] ">
           <a
             href={`http://localhost:3000${downloadUrl}`}
             download
             target="_blank"
             rel="noopener noreferrer"
-            className=" bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-semibold"
-          >
-            Download Transcript (.docx)
+            className=""
+          ><DownloadButton text="download" />
           </a>
-
-          {/* Copy button that copies formatted markdown */}
           <CopyButton targetRef={transcriptRef}/>
         </div>
       )}
     </div>
+    </div>
   );
 }
+
+export interface PromptUploaderProps {
+  promptRef: RefObject<string | null>;
+}
+
